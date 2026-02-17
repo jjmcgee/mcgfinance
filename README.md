@@ -108,7 +108,7 @@ sudo docker compose --profile prod up --build -d
 ### 3) Configure Nginx reverse proxy (hardened)
 
 1. Copy `deploy/nginx/mcgfinance.conf.example` to `/etc/nginx/sites-available/mcgfinance.conf`.
-2. Replace `finance.example.com` with your real domain.
+2. Domain is set to `finance.mcg.scot` in the template (change if needed).
 3. Enable the site and reload:
 
 ```bash
@@ -122,7 +122,7 @@ sudo systemctl reload nginx
 If this domain does not already have a cert:
 
 ```bash
-sudo certbot --nginx -d finance.example.com
+sudo certbot --nginx -d finance.mcg.scot
 ```
 
 Certbot will install the cert paths and configure renewal. Verify:
@@ -134,7 +134,7 @@ sudo certbot renew --dry-run
 ### 5) Verify
 
 ```bash
-curl -I https://finance.example.com/api/health
+curl -I https://finance.mcg.scot/api/health
 sudo docker compose --profile prod ps
 sudo docker compose --profile prod logs -f app-prod
 ```
