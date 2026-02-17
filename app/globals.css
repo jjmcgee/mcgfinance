@@ -1,0 +1,345 @@
+:root {
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --text: #13233a;
+  --muted: #5b6777;
+  --line: #d7dde6;
+  --accent: #0f62fe;
+  --danger: #b3261e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top right, #e6f2ff, #f7f8fb 45%, #f5f6f8);
+  color: var(--text);
+}
+
+.session-header {
+  max-width: 940px;
+  margin: 1rem auto 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.session-name {
+  margin: 0.2rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.session-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+main {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: 1.7rem;
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.top-links {
+  margin: 0 0 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.stat {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.stat p {
+  margin: 0;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  padding: 0.6rem 0.2rem;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.95rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+}
+
+.stacked {
+  margin-bottom: 0.75rem;
+}
+
+.checkbox {
+  align-items: center;
+  flex-direction: row;
+  gap: 0.55rem;
+  color: var(--text);
+}
+
+.checkbox input {
+  width: auto;
+  margin: 0;
+}
+
+.action {
+  height: fit-content;
+  border: 1px solid #0b4bd1;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.65rem 0.9rem;
+  cursor: pointer;
+}
+
+.action[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.action.ghost {
+  background: #fff;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.action.danger {
+  background: #d93636;
+  border-color: #b3261e;
+}
+
+.month-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.month-row {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.month-select {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.month-title {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.month-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.month-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.month-edit-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.warning {
+  color: #8a4b00;
+  background: #fff4e5;
+  border: 1px solid #ffd7a0;
+  border-radius: 8px;
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.88rem;
+}
+
+.outgoing-total {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  text-align: right;
+}
+
+.outgoing-total-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.outgoing-total-value {
+  margin: 0.2rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.table-check {
+  justify-content: center;
+}
+
+.account-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.account-row {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.account-code {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.account-name {
+  margin: 0;
+  color: var(--muted);
+}
+
+.account-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+@media (max-width: 680px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  h1 {
+    font-size: 1.35rem;
+  }
+
+  .month-actions {
+    flex-direction: column;
+  }
+
+  .table-actions {
+    flex-direction: column;
+  }
+
+  .account-actions {
+    flex-direction: column;
+  }
+
+  .session-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .session-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
