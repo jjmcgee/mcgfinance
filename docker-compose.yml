@@ -1,0 +1,27 @@
+services:
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: mcgfinance-dev
+    env_file:
+      - .env.local
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/.next
+    profiles: ["dev"]
+
+  app-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcgfinance-prod
+    env_file:
+      - .env.local
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+    profiles: ["prod"]
