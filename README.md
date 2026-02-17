@@ -107,15 +107,16 @@ sudo docker compose --profile prod up --build -d
 
 ### 3) Configure Nginx reverse proxy (hardened)
 
-1. Copy `deploy/nginx/mcgfinance.conf.example` to `/etc/nginx/sites-available/mcgfinance.conf`.
-2. Domain is set to `finance.mcg.scot` in the template (change if needed).
-3. Enable the site and reload:
+1. First install HTTP bootstrap config:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/mcgfinance.conf /etc/nginx/sites-enabled/mcgfinance.conf
+sudo cp deploy/nginx/mcgfinance.bootstrap-http.conf.example /etc/nginx/sites-available/mcgfinance.conf
+sudo ln -sfn /etc/nginx/sites-available/mcgfinance.conf /etc/nginx/sites-enabled/mcgfinance.conf
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+2. Domain is set to `finance.mcg.scot` in the template (change if needed).
 
 ### 4) Issue/attach TLS certificate with Certbot
 
@@ -125,13 +126,21 @@ If this domain does not already have a cert:
 sudo certbot --nginx -d finance.mcg.scot
 ```
 
-Certbot will install the cert paths and configure renewal. Verify:
+3. Replace site config with hardened HTTPS reverse proxy:
+
+```bash
+sudo cp deploy/nginx/mcgfinance.conf.example /etc/nginx/sites-available/mcgfinance.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Certbot will configure renewal. Verify:
 
 ```bash
 sudo certbot renew --dry-run
 ```
 
-### 5) Verify
+### 5) Verify app and headers
 
 ```bash
 curl -I https://finance.mcg.scot/api/health
