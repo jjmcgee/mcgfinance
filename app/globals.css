@@ -6,6 +6,7 @@
   --line: #d7dde6;
   --accent: #0f62fe;
   --danger: #b3261e;
+  --money: #1f8a5a;
 }
 
 * {
@@ -32,6 +33,55 @@ body {
   align-items: center;
 }
 
+.auth-landing {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.auth-hero {
+  background:
+    radial-gradient(circle at 15% 20%, #e6f6ee, transparent 40%),
+    radial-gradient(circle at 80% 85%, #e8f0ff, transparent 35%),
+    linear-gradient(130deg, #f7fdf9, #f6f9ff);
+}
+
+.eyebrow {
+  margin: 0 0 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--money);
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.hero-copy {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--muted);
+}
+
+.hero-highlights {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.hero-highlights p {
+  margin: 0;
+  border: 1px solid #d4e7dc;
+  border-radius: 9px;
+  padding: 0.6rem 0.7rem;
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 0.94rem;
+}
+
+.auth-card {
+  display: grid;
+  align-content: start;
+}
+
 .session-name {
   margin: 0.2rem 0 0;
   font-size: 1.1rem;
@@ -41,7 +91,7 @@ body {
 .session-header-actions {
   display: flex;
   gap: 0.5rem;
-  align-items: end;
+  align-items: flex-end;
 }
 
 main {
@@ -309,6 +359,10 @@ select {
 }
 
 @media (max-width: 680px) {
+  .auth-landing {
+    grid-template-columns: 1fr;
+  }
+
   .grid {
     grid-template-columns: 1fr;
   }

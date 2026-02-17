@@ -139,9 +139,20 @@ export function AuthShell({ children }: AuthShellProps) {
 
   if (!profile) {
     return (
-      <main>
-        <h1>Monthly Expenses</h1>
-        <section className="card">
+      <main className="auth-landing">
+        <section className="auth-hero card">
+          <p className="eyebrow">Finance hub</p>
+          <h1>Monthly Expenses</h1>
+          <p className="hero-copy">
+            Keep bills, outgoings, and monthly cashflow clear in one simple dashboard.
+          </p>
+          <div className="hero-highlights">
+            <p>💷 Track salary and monthly float</p>
+            <p>🏦 Separate balances by account</p>
+            <p>🧾 Stay ahead of recurring bills</p>
+          </div>
+        </section>
+        <section className="card auth-card">
           <h2>{mode === "login" ? "Sign In" : "Create Account"}</h2>
           {errorMessage && <p className="error">{errorMessage}</p>}
           {statusMessage && <p className="label">{statusMessage}</p>}
