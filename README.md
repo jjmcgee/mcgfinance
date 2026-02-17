@@ -45,7 +45,6 @@ Copy `.env.example` to `.env.local` and set:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `DOMAIN` (used by Caddy in `prod` profile for HTTPS, e.g. `app.example.com`)
 
 ### 3) Optional: assign legacy data
 
@@ -72,16 +71,16 @@ npm install
 npm run dev
 ```
 
-## Run Production (HTTPS via Caddy)
+## Run Production (behind Nginx)
 
 ```bash
 docker compose --profile prod up --build -d
 ```
 
 Requirements:
-- `DOMAIN` must point to your server public IP.
-- Ports `80` and `443` must be open.
-- Caddy automatically provisions and renews TLS certificates.
+- Nginx should reverse proxy to `127.0.0.1:3000`.
+- `app-prod` binds to loopback only: `127.0.0.1:3000:3000`.
+- Configure TLS certificates in Nginx (for example with Certbot).
 
 ## Deploy on Ubuntu Server (Docker)
 
@@ -89,11 +88,9 @@ Requirements:
 git clone <your-repo-url>
 cd mcgfinance
 cp .env.example .env.local
-# fill env values (including DOMAIN)
+# fill env values
 sudo docker compose --profile prod up --build -d
 ```
-
-This stack already includes Caddy for HTTPS termination and reverse proxying.
 
 ## API Endpoints
 
