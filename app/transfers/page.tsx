@@ -255,6 +255,9 @@ export default function TransfersPage() {
         <Link className="action ghost" href="/">
           Home
         </Link>
+        <Link className="action ghost" href="/profile">
+          Profile
+        </Link>
         <Link className="action ghost" href="/outgoings">
           Outgoings
         </Link>

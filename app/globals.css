@@ -1,10 +1,11 @@
 :root {
-  --bg: #f5f6f8;
+  --bg: #f2f5f9;
   --panel: #ffffff;
-  --text: #13233a;
-  --muted: #5b6777;
-  --line: #d7dde6;
-  --accent: #0f62fe;
+  --text: #10233e;
+  --muted: #4f5f73;
+  --line: #d4dde8;
+  --accent: #2159c7;
+  --accent-dark: #1a4aa8;
   --danger: #b3261e;
   --money: #1f8a5a;
 }
@@ -16,21 +17,25 @@
 body {
   margin: 0;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top right, #e6f2ff, #f7f8fb 45%, #f5f6f8);
+  background:
+    radial-gradient(circle at 20% -10%, #e8f3ff, transparent 34%),
+    radial-gradient(circle at 100% 0%, #e5ecf9, transparent 32%),
+    var(--bg);
   color: var(--text);
 }
 
 .session-header {
   max-width: 940px;
-  margin: 1rem auto 0;
-  padding: 0.75rem 1rem;
+  margin: 1rem auto 0.5rem;
+  padding: 0.9rem 1rem;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--panel);
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   align-items: center;
+  box-shadow: 0 10px 24px rgba(16, 35, 62, 0.06);
 }
 
 .auth-landing {
@@ -84,7 +89,7 @@ body {
 
 .session-name {
   margin: 0.2rem 0 0;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
 }
 
@@ -113,15 +118,17 @@ h2 {
 .top-links {
   margin: 0 0 1rem;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 1rem;
   margin-bottom: 1rem;
+  box-shadow: 0 10px 24px rgba(16, 35, 62, 0.06);
 }
 
 .grid {
@@ -221,13 +228,15 @@ select {
 
 .action {
   height: fit-content;
-  border: 1px solid #0b4bd1;
+  border: 1px solid var(--accent-dark);
   border-radius: 8px;
   background: var(--accent);
   color: #fff;
   font-weight: 600;
   padding: 0.65rem 0.9rem;
   cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .action[disabled] {
@@ -236,14 +245,25 @@ select {
 }
 
 .action.ghost {
-  background: #fff;
-  color: var(--text);
-  border-color: var(--line);
+  background: #f8fbff;
+  color: #1c3555;
+  border-color: #c9d8ed;
 }
 
 .action.danger {
   background: #d93636;
   border-color: #b3261e;
+}
+
+.action:hover:not([disabled]) {
+  background: var(--accent-dark);
+  border-color: #143d90;
+  transform: translateY(-1px);
+}
+
+.action.ghost:hover:not([disabled]) {
+  background: #eaf2ff;
+  border-color: #9eb8db;
 }
 
 .month-list {

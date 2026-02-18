@@ -269,6 +269,9 @@ export default function OutgoingsPage() {
         <Link className="action ghost" href="/">
           Home
         </Link>
+        <Link className="action ghost" href="/profile">
+          Profile
+        </Link>
         <Link className="action ghost" href="/accounts">
           Accounts
         </Link>

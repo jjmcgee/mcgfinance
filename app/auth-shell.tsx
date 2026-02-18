@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 
 type AuthShellProps = {
@@ -19,7 +20,6 @@ export function AuthShell({ children }: AuthShellProps) {
   const [password, setPassword] = useState("");
   const [displayNameInput, setDisplayNameInput] = useState("");
   const [signingIn, setSigningIn] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
 
@@ -85,37 +85,6 @@ export function AuthShell({ children }: AuthShellProps) {
       setErrorMessage(error instanceof Error ? error.message : "Authentication failed");
     } finally {
       setSigningIn(false);
-    }
-  }
-
-  async function handleProfileSave(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSavingProfile(true);
-    setErrorMessage("");
-    setStatusMessage("");
-
-    try {
-      const response = await fetch("/api/auth/me", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          display_name: displayNameInput.trim() || null
-        })
-      });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to save display name");
-      }
-
-      const nextProfile = (payload.data ?? null) as AppProfile | null;
-      setProfile(nextProfile);
-      setDisplayNameInput(nextProfile?.display_name ?? "");
-      setStatusMessage("Display name updated.");
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to save display name");
-    } finally {
-      setSavingProfile(false);
     }
   }
 
@@ -221,23 +190,11 @@ export function AuthShell({ children }: AuthShellProps) {
           <p className="label">Signed in as</p>
           <p className="session-name">{fallbackDisplay}</p>
         </div>
-        <form className="session-header-actions" onSubmit={handleProfileSave}>
-          <label>
-            Display name
-            <input
-              type="text"
-              value={displayNameInput}
-              disabled={savingProfile}
-              onChange={(event) => setDisplayNameInput(event.target.value)}
-            />
-          </label>
-          <button className="action ghost" type="submit" disabled={savingProfile}>
-            {savingProfile ? "Saving..." : "Save Name"}
-          </button>
+        <div className="session-header-actions">
           <button className="action ghost" type="button" onClick={() => void handleSignOut()}>
             Sign Out
           </button>
-        </form>
+        </div>
       </header>
       {statusMessage && (
         <main>
