@@ -24,10 +24,26 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
 
-      - name: Configure known_hosts
+      - name: Validate deploy secrets
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
         run: |
+          set -euo pipefail
+          [ -n "$PROD_SSH_HOST" ] || { echo "Missing required secret: PROD_SSH_HOST"; exit 1; }
+          [ -n "$PROD_SSH_USER" ] || { echo "Missing required secret: PROD_SSH_USER"; exit 1; }
+          [ -n "$PROD_SSH_PORT" ] || { echo "Missing required secret: PROD_SSH_PORT"; exit 1; }
+          [ -n "$PROD_SSH_KNOWN_HOSTS" ] || { echo "Missing required secret: PROD_SSH_KNOWN_HOSTS"; exit 1; }
+
+      - name: Configure known_hosts
+        env:
+          PROD_SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          printf '%s\n' "$PROD_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy app on server
