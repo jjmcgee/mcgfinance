@@ -166,10 +166,12 @@ sudo docker compose --profile prod up --build -d
 ## Git Workflow And Prod Deploy
 
 Branch model:
+
 - `main`: production branch (server deploys this branch only).
 - `codex/dev`: local/dev branch for localhost work.
 
 Recommended flow:
+
 1. Do all development on `codex/dev`.
 2. Open PR `codex/dev -> main`.
 3. Merge PR after review/checks.
@@ -178,13 +180,15 @@ Recommended flow:
 This repo includes `.github/workflows/deploy-prod.yml` for production deploys to `/opt/mcgfinance`.
 
 Required GitHub repository secrets:
+
 - `PROD_SSH_HOST`: Ubuntu server hostname or IP.
 - `PROD_SSH_USER`: deploy user on server.
 - `PROD_SSH_PORT`: usually `22`.
 - `PROD_SSH_KEY`: private SSH key for deploy user.
-- `PROD_SSH_KNOWN_HOSTS`: output from `ssh-keyscan -H <host>`.
+- `PROD_SSH_KNOWN_HOSTS`: host key entry for your server, for example `ssh-keyscan -H -p 22 <server>`.
 
 Server requirement:
+
 - Deploy user must have access to `/opt/mcgfinance` and permission to run `docker compose` (typically via `docker` group).
 
 ## API Endpoints
