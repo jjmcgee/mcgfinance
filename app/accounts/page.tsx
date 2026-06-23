@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { Account, AccountCode } from "@/lib/types";
 
@@ -139,86 +138,97 @@ export default function AccountsPage() {
 
   return (
     <main>
-      <div className="top-links">
-        <Link className="action ghost" href="/">
-          Home
-        </Link>
-        <Link className="action ghost" href="/profile">
-          Profile
-        </Link>
-        <Link className="action ghost" href="/outgoings">
-          Outgoings
-        </Link>
-        <Link className="action ghost" href="/transfers">
-          Transfers
-        </Link>
-      </div>
-
-      <h1>Accounts</h1>
+      <h1>Accounts Dashboard</h1>
 
       {errorMessage && (
-        <div className="card">
-          <p className="error">{errorMessage}</p>
+        <div className="error">
+          <p>{errorMessage}</p>
         </div>
       )}
 
-      <section className="card">
-        <h2>Add Account</h2>
-        <form className="form-grid" onSubmit={handleCreate}>
-          <label>
-            Account Letter
+      {/* Add Account Card */}
+      <section className="card highlight" style={{ marginBottom: "2rem" }}>
+        <h2>Create Funding Account</h2>
+        <form className="form-grid full-width-btn" onSubmit={handleCreate}>
+          <label htmlFor="account-code">
+            Account Identifer (Single Letter/Word)
             <input
               required
+              id="account-code"
+              name="code"
               type="text"
               maxLength={12}
-              placeholder="B"
+              placeholder="e.g. B (Bills), N (Nest)"
               value={newCode}
               onChange={(event) => setNewCode(event.target.value.toUpperCase())}
+              autoComplete="off"
             />
           </label>
 
-          <label>
-            Bank Name
+          <label htmlFor="account-bank-name">
+            Bank / Purpose Name
             <input
               required
+              id="account-bank-name"
+              name="bank_name"
               type="text"
-              placeholder="Bank 1"
+              placeholder="e.g. Barclays, Monzo Savings"
               value={newBankName}
               onChange={(event) => setNewBankName(event.target.value)}
+              autoComplete="organization"
             />
           </label>
 
           <button className="action" type="submit" disabled={creating}>
-            {creating ? "Saving..." : "Add Account"}
+            {creating ? "Adding..." : "Add Account"}
           </button>
         </form>
       </section>
 
+      {/* Manage Accounts Grid */}
       <section className="card">
-        <h2>Manage Accounts</h2>
+        <h2 style={{ marginBottom: "1.5rem" }}>Active Accounts</h2>
 
         {loading ? (
-          <p className="label">Loading accounts...</p>
+          <p className="label">Loading funding accounts...</p>
+        ) : accounts.length === 0 ? (
+          <p className="label">No funding accounts set up yet.</p>
         ) : (
-          <div className="account-list">
+          <div className="bank-cards-grid">
             {accounts.map((account) => {
               const isEditing = editingCode === account.code;
 
               if (isEditing) {
                 return (
-                  <form key={account.code} className="account-row" onSubmit={handleSave}>
-                    <p className="account-code">{account.code}</p>
-                    <label>
+                  <form 
+                    key={account.code} 
+                    className="bank-card" 
+                    onSubmit={handleSave}
+                    style={{ 
+                      background: "rgba(99, 102, 241, 0.05)", 
+                      borderColor: "var(--accent)", 
+                      height: "auto" 
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.75rem" }}>
+                      <span className="bank-card-code">{account.code}</span>
+                      <span className="badge success">Editing</span>
+                    </div>
+                    <label htmlFor={`edit-account-bank-name-${account.code}`} style={{ width: "100%", marginBottom: "1rem" }}>
                       Bank Name
                       <input
                         required
+                        id={`edit-account-bank-name-${account.code}`}
+                        name="bank_name"
                         type="text"
                         value={bankName}
                         onChange={(event) => setBankName(event.target.value)}
+                        style={{ height: "34px", padding: "0 0.5rem" }}
+                        autoComplete="organization"
                       />
                     </label>
-                    <div className="account-actions">
-                      <button className="action" type="submit" disabled={saving}>
+                    <div className="account-actions" style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
+                      <button className="action" type="submit" disabled={saving} style={{ height: "32px", fontSize: "0.82rem", flexGrow: 1 }}>
                         {saving ? "Saving..." : "Save"}
                       </button>
                       <button
@@ -228,6 +238,7 @@ export default function AccountsPage() {
                           setEditingCode("");
                           setBankName("");
                         }}
+                        style={{ height: "32px", fontSize: "0.82rem" }}
                       >
                         Cancel
                       </button>
@@ -236,22 +247,37 @@ export default function AccountsPage() {
                 );
               }
 
+              // Normal Card View
               return (
-                <article key={account.code} className="account-row">
-                  <p className="account-code">{account.code}</p>
-                  <p className="account-name">{account.bank_name}</p>
-                  <div className="account-actions">
-                    <button className="action ghost" type="button" onClick={() => startEdit(account)}>
-                      Edit
-                    </button>
-                    <button
-                      className="action danger"
-                      type="button"
-                      onClick={() => void handleDelete(account.code)}
-                      disabled={deletingCode === account.code}
-                    >
-                      {deletingCode === account.code ? "Removing..." : "Remove"}
-                    </button>
+                <article key={account.code} className="bank-card">
+                  <div className="bank-card-header">
+                    <div className="bank-card-chip" />
+                    <span className="bank-card-code">{account.code}</span>
+                  </div>
+                  
+                  <div className="bank-card-footer">
+                    <span className="bank-card-label">Bank Institution</span>
+                    <span className="bank-card-name">{account.bank_name}</span>
+                    
+                    <div className="account-actions" style={{ marginTop: "0.75rem", display: "flex", gap: "0.45rem" }}>
+                      <button 
+                        className="action ghost" 
+                        type="button" 
+                        onClick={() => startEdit(account)}
+                        style={{ height: "30px", fontSize: "0.78rem", padding: "0 0.65rem", flexGrow: 1 }}
+                      >
+                        Rename
+                      </button>
+                      <button
+                        className="action danger"
+                        type="button"
+                        onClick={() => void handleDelete(account.code)}
+                        disabled={deletingCode === account.code}
+                        style={{ height: "30px", fontSize: "0.78rem", padding: "0 0.65rem" }}
+                      >
+                        {deletingCode === account.code ? "..." : "Remove"}
+                      </button>
+                    </div>
                   </div>
                 </article>
               );
