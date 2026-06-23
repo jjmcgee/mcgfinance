@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Account, AccountCode, ExpenseItem, MonthSummary } from "@/lib/types";
 
@@ -177,7 +176,10 @@ export default function OutgoingsPage() {
 
       const created = payload.data as ExpenseItem;
       setItems((current) => [...current, created].sort((a, b) => Number(a.due_day) - Number(b.due_day)));
-      setForm(defaultOutgoingForm);
+      setForm((current) => ({
+        ...defaultOutgoingForm,
+        account_code: current.account_code // Keep current selected account code for convenience
+      }));
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Failed to add monthly outgoing");
     } finally {
@@ -265,35 +267,23 @@ export default function OutgoingsPage() {
 
   return (
     <main>
-      <div className="top-links">
-        <Link className="action ghost" href="/">
-          Home
-        </Link>
-        <Link className="action ghost" href="/profile">
-          Profile
-        </Link>
-        <Link className="action ghost" href="/accounts">
-          Accounts
-        </Link>
-        <Link className="action ghost" href="/transfers">
-          Transfers
-        </Link>
-      </div>
-
       <h1>Monthly Outgoings</h1>
 
       {errorMessage && (
-        <div className="card">
-          <p className="error">{errorMessage}</p>
+        <div className="error">
+          <p>{errorMessage}</p>
         </div>
       )}
 
-      <section className="card">
-        <h2>Add Outgoing</h2>
-
-        <label className="stacked">
-          Month
+      {/* Selector & Add Outgoing Section */}
+      <section className="card highlight">
+        <h2 style={{ marginBottom: "1.25rem" }}>Select Month & Record Outgoing</h2>
+        
+        <label htmlFor="outgoing-month-select" className="stacked" style={{ marginBottom: "1.25rem" }}>
+          Budget Month
           <select
+            id="outgoing-month-select"
+            name="month_id"
             value={selectedMonthId}
             disabled={loadingMonths || months.length === 0 || submitting}
             onChange={(event) => setSelectedMonthId(event.target.value)}
@@ -310,32 +300,42 @@ export default function OutgoingsPage() {
           </select>
         </label>
 
-        <form className="form-grid" onSubmit={handleAdd}>
-          <label>
-            Name
+        <form className="form-grid full-width-btn" onSubmit={handleAdd}>
+          <label htmlFor="outgoing-name">
+            Name (Payee/Bill Name)
             <input
               required
+              id="outgoing-name"
+              name="name"
               type="text"
+              placeholder="e.g. Council Tax"
               value={form.name}
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              autoComplete="organization"
             />
           </label>
 
-          <label>
-            Due Day
+          <label htmlFor="outgoing-due-day">
+            Due Day of Month
             <input
               required
+              id="outgoing-due-day"
+              name="due_day"
               type="number"
               min="1"
               max="31"
+              placeholder="1"
               value={form.due_day}
               onChange={(event) => setForm((current) => ({ ...current, due_day: event.target.value }))}
+              autoComplete="off"
             />
           </label>
 
-          <label>
-            Account
+          <label htmlFor="outgoing-account-code">
+            Debit Account
             <select
+              id="outgoing-account-code"
+              name="account_code"
               value={form.account_code}
               onChange={(event) =>
                 setForm((current) => ({ ...current, account_code: event.target.value as AccountCode }))
@@ -349,179 +349,221 @@ export default function OutgoingsPage() {
             </select>
           </label>
 
-          <label>
-            Amount
+          <label htmlFor="outgoing-amount">
+            Amount (GBP)
             <input
               required
+              id="outgoing-amount"
+              name="amount"
               type="number"
               min="0"
               step="0.01"
+              placeholder="0.00"
               value={form.amount}
               onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
+              autoComplete="transaction-amount"
             />
           </label>
 
-          <label className="checkbox">
+          <label htmlFor="outgoing-recurring" className="checkbox" style={{ gridColumn: "span 2", padding: "0.25rem 0" }}>
             <input
+              id="outgoing-recurring"
+              name="is_recurring"
               type="checkbox"
               checked={form.is_recurring}
               onChange={(event) => setForm((current) => ({ ...current, is_recurring: event.target.checked }))}
+              autoComplete="off"
             />
-            Recurring
+            Recurring monthly bill
           </label>
 
           <button className="action" type="submit" disabled={months.length === 0 || submitting}>
-            {submitting ? "Saving..." : "Add Outgoing"}
+            {submitting ? "Adding..." : "Add Outgoing"}
           </button>
         </form>
       </section>
 
+      {/* Outgoing List */}
       <section className="card">
-        <h2>Outgoing List</h2>
+        <h2>Outgoing Bills List</h2>
+        
         {loadingItems ? (
-          <p className="label">Loading monthly outgoings...</p>
+          <p className="label" style={{ padding: "1.5rem 0" }}>Loading outgoings...</p>
         ) : items.length === 0 ? (
-          <p className="label">No monthly outgoings entered yet.</p>
+          <p className="label" style={{ padding: "1.5rem 0" }}>No outgoings entered for this month yet.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Due</th>
-                <th>Account</th>
-                <th>Recurring</th>
-                <th className="amount">Amount</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => {
-                const isEditing = editingId === item.id;
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th style={{ width: "85px" }}>Due Day</th>
+                  <th>Account</th>
+                  <th style={{ width: "120px" }}>Recurring</th>
+                  <th className="amount">Amount</th>
+                  <th style={{ width: "160px", textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const isEditing = editingId === item.id;
 
-                if (isEditing) {
+                  if (isEditing) {
+                    return (
+                      <tr key={item.id} style={{ background: "rgba(99, 102, 241, 0.02)" }}>
+                        <td>
+                          <input
+                            required
+                            id={`edit-outgoing-name-${item.id}`}
+                            name="name"
+                            type="text"
+                            value={editForm.name}
+                            onChange={(event) =>
+                              setEditForm((current) => ({ ...current, name: event.target.value }))
+                            }
+                            style={{ height: "34px", padding: "0 0.5rem" }}
+                            autoComplete="organization"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            required
+                            id={`edit-outgoing-due-day-${item.id}`}
+                            name="due_day"
+                            type="number"
+                            min="1"
+                            max="31"
+                            value={editForm.due_day}
+                            onChange={(event) =>
+                              setEditForm((current) => ({ ...current, due_day: event.target.value }))
+                            }
+                            style={{ height: "34px", padding: "0 0.5rem" }}
+                            autoComplete="off"
+                          />
+                        </td>
+                        <td>
+                          <select
+                            id={`edit-outgoing-account-${item.id}`}
+                            name="account_code"
+                            value={editForm.account_code}
+                            onChange={(event) =>
+                              setEditForm((current) => ({
+                                ...current,
+                                account_code: event.target.value as AccountCode
+                              }))
+                            }
+                            style={{ height: "34px", padding: "0 0.5rem" }}
+                          >
+                            {accountsForView.map((account) => (
+                              <option key={account.code} value={account.code}>
+                                {account.code} - {account.bank_name}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <label htmlFor={`edit-outgoing-recurring-${item.id}`} className="checkbox table-check" style={{ fontSize: "0.85rem" }}>
+                            <input
+                              id={`edit-outgoing-recurring-${item.id}`}
+                              name="is_recurring"
+                              type="checkbox"
+                              checked={editForm.is_recurring}
+                              onChange={(event) =>
+                                setEditForm((current) => ({ ...current, is_recurring: event.target.checked }))
+                              }
+                              autoComplete="off"
+                            />
+                            Yes
+                          </label>
+                        </td>
+                        <td className="amount">
+                          <input
+                            required
+                            id={`edit-outgoing-amount-${item.id}`}
+                            name="amount"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editForm.amount}
+                            onChange={(event) =>
+                              setEditForm((current) => ({ ...current, amount: event.target.value }))
+                            }
+                            style={{ height: "34px", padding: "0 0.5rem", width: "100px", textAlign: "right" }}
+                            autoComplete="transaction-amount"
+                          />
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              className="action"
+                              type="button"
+                              disabled={updating}
+                              onClick={() => void handleUpdate()}
+                            >
+                              {updating ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                              className="action ghost"
+                              type="button"
+                              onClick={() => {
+                                setEditingId("");
+                                setEditForm(defaultOutgoingForm);
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+
                   return (
                     <tr key={item.id}>
+                      <td style={{ fontWeight: "500", color: "#fff" }}>{item.name}</td>
                       <td>
-                        <input
-                          required
-                          type="text"
-                          value={editForm.name}
-                          onChange={(event) =>
-                            setEditForm((current) => ({ ...current, name: event.target.value }))
-                          }
-                        />
+                        <span className="badge neutral">Day {item.due_day}</span>
                       </td>
                       <td>
-                        <input
-                          required
-                          type="number"
-                          min="1"
-                          max="31"
-                          value={editForm.due_day}
-                          onChange={(event) =>
-                            setEditForm((current) => ({ ...current, due_day: event.target.value }))
-                          }
-                        />
+                        <span style={{ fontWeight: "600", color: "var(--accent)" }}>{item.account_code}</span>
+                        <span style={{ color: "var(--muted)", fontSize: "0.8rem", marginLeft: "0.4rem" }}>
+                          ({accountNameByCode.get(item.account_code) ?? "Unknown"})
+                        </span>
                       </td>
                       <td>
-                        <select
-                          value={editForm.account_code}
-                          onChange={(event) =>
-                            setEditForm((current) => ({
-                              ...current,
-                              account_code: event.target.value as AccountCode
-                            }))
-                          }
-                        >
-                          {accountsForView.map((account) => (
-                            <option key={account.code} value={account.code}>
-                              {account.code} - {account.bank_name}
-                            </option>
-                          ))}
-                        </select>
+                        {item.is_recurring ? (
+                          <span className="badge success">Recurring</span>
+                        ) : (
+                          <span className="badge neutral">One-off</span>
+                        )}
                       </td>
-                      <td>
-                        <label className="checkbox table-check">
-                          <input
-                            type="checkbox"
-                            checked={editForm.is_recurring}
-                            onChange={(event) =>
-                              setEditForm((current) => ({ ...current, is_recurring: event.target.checked }))
-                            }
-                          />
-                          Yes
-                        </label>
-                      </td>
-                      <td className="amount">
-                        <input
-                          required
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={editForm.amount}
-                          onChange={(event) =>
-                            setEditForm((current) => ({ ...current, amount: event.target.value }))
-                          }
-                        />
-                      </td>
+                      <td className="amount" style={{ color: "var(--danger)" }}>{currency.format(Number(item.amount))}</td>
                       <td>
                         <div className="table-actions">
-                          <button
-                            className="action"
-                            type="button"
-                            disabled={updating}
-                            onClick={() => void handleUpdate()}
-                          >
-                            {updating ? "Saving..." : "Save"}
+                          <button className="action ghost" type="button" onClick={() => startEdit(item)}>
+                            Edit
                           </button>
                           <button
-                            className="action ghost"
+                            className="action danger"
                             type="button"
-                            onClick={() => {
-                              setEditingId("");
-                              setEditForm(defaultOutgoingForm);
-                            }}
+                            disabled={deletingId === item.id}
+                            onClick={() => void handleDelete(item.id)}
                           >
-                            Cancel
+                            {deletingId === item.id ? "Removing..." : "Remove"}
                           </button>
                         </div>
                       </td>
                     </tr>
                   );
-                }
-
-                return (
-                  <tr key={item.id}>
-                    <td>{item.name}</td>
-                    <td>{item.due_day}</td>
-                    <td>{item.account_code} - {accountNameByCode.get(item.account_code) ?? "Unknown"}</td>
-                    <td>{item.is_recurring ? "Yes" : "No"}</td>
-                    <td className="amount">{currency.format(Number(item.amount))}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button className="action ghost" type="button" onClick={() => startEdit(item)}>
-                          Edit
-                        </button>
-                        <button
-                          className="action danger"
-                          type="button"
-                          disabled={deletingId === item.id}
-                          onClick={() => void handleDelete(item.id)}
-                        >
-                          {deletingId === item.id ? "Removing..." : "Remove"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        <div className="outgoing-total">
-          <p className="outgoing-total-label">Total Monthly Outgoing</p>
-          <p className="outgoing-total-value">{currency.format(totalOut)}</p>
+        <div className="outgoing-total" style={{ borderTop: "1px solid var(--panel-border)", marginTop: "1.25rem", paddingTop: "1rem" }}>
+          <p className="outgoing-total-label" style={{ fontSize: "0.85rem" }}>Total Committed Outgoings</p>
+          <p className="outgoing-total-value" style={{ fontSize: "1.5rem", color: "var(--danger)" }}>{currency.format(totalOut)}</p>
         </div>
       </section>
     </main>

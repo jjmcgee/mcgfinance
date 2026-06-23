@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Account, AccountCode, MonthSummary, TransferItem } from "@/lib/types";
 
@@ -171,7 +170,10 @@ export default function TransfersPage() {
 
       const created = payload.data as TransferItem;
       setItems((current) => [...current, created]);
-      setForm(defaultTransferForm);
+      setForm((current) => ({
+        ...defaultTransferForm,
+        to_account_code: current.to_account_code // Keep current selected account code
+      }));
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Failed to add transfer");
     } finally {
@@ -251,35 +253,23 @@ export default function TransfersPage() {
 
   return (
     <main>
-      <div className="top-links">
-        <Link className="action ghost" href="/">
-          Home
-        </Link>
-        <Link className="action ghost" href="/profile">
-          Profile
-        </Link>
-        <Link className="action ghost" href="/outgoings">
-          Outgoings
-        </Link>
-        <Link className="action ghost" href="/accounts">
-          Accounts
-        </Link>
-      </div>
-
       <h1>Manage Transfers</h1>
 
       {errorMessage && (
-        <div className="card">
-          <p className="error">{errorMessage}</p>
+        <div className="error">
+          <p>{errorMessage}</p>
         </div>
       )}
 
-      <section className="card">
-        <h2>Add Transfer</h2>
+      {/* Selector & Add Transfer Section */}
+      <section className="card highlight">
+        <h2 style={{ marginBottom: "1.25rem" }}>Select Month & Record Transfer</h2>
 
-        <label className="stacked">
-          Month
+        <label htmlFor="transfer-month-select" className="stacked" style={{ marginBottom: "1.25rem" }}>
+          Budget Month
           <select
+            id="transfer-month-select"
+            name="month_id"
             value={selectedMonthId}
             disabled={loadingMonths || months.length === 0 || submitting}
             onChange={(event) => setSelectedMonthId(event.target.value)}
@@ -296,10 +286,12 @@ export default function TransfersPage() {
           </select>
         </label>
 
-        <form className="form-grid" onSubmit={handleAdd}>
-          <label>
-            Transfer To
+        <form className="form-grid full-width-btn" onSubmit={handleAdd}>
+          <label htmlFor="transfer-to-account">
+            Transfer To Account
             <select
+              id="transfer-to-account"
+              name="to_account_code"
               value={form.to_account_code}
               onChange={(event) =>
                 setForm((current) => ({ ...current, to_account_code: event.target.value as AccountCode }))
@@ -313,149 +305,174 @@ export default function TransfersPage() {
             </select>
           </label>
 
-          <label>
-            Amount
+          <label htmlFor="transfer-amount">
+            Amount (GBP)
             <input
               required
+              id="transfer-amount"
+              name="amount"
               type="number"
               min="0"
               step="0.01"
+              placeholder="0.00"
               value={form.amount}
               onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
+              autoComplete="transaction-amount"
             />
           </label>
 
-          <label>
-            Note
+          <label htmlFor="transfer-note" style={{ gridColumn: "span 2" }}>
+            Note / Description
             <input
+              id="transfer-note"
+              name="note"
               type="text"
-              placeholder="Optional note"
+              placeholder="e.g. Savings allocation (Optional)"
               value={form.note}
               onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))}
+              autoComplete="off"
             />
           </label>
 
           <button className="action" type="submit" disabled={months.length === 0 || submitting}>
-            {submitting ? "Saving..." : "Add Transfer"}
+            {submitting ? "Adding..." : "Add Transfer"}
           </button>
         </form>
       </section>
 
+      {/* Transfer List Table */}
       <section className="card">
-        <h2>Transfer List</h2>
-        {loadingItems ? (
-          <p className="label">Loading transfers...</p>
-        ) : items.length === 0 ? (
-          <p className="label">No transfers entered yet.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Transfer To</th>
-                <th>Note</th>
-                <th className="amount">Amount</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => {
-                const isEditing = editingId === item.id;
+        <h2>Transfers List</h2>
 
-                if (isEditing) {
+        {loadingItems ? (
+          <p className="label" style={{ padding: "1.5rem 0" }}>Loading transfers...</p>
+        ) : items.length === 0 ? (
+          <p className="label" style={{ padding: "1.5rem 0" }}>No transfers recorded for this month yet.</p>
+        ) : (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Destination Account</th>
+                  <th>Note</th>
+                  <th className="amount">Amount</th>
+                  <th style={{ width: "160px", textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const isEditing = editingId === item.id;
+
+                  if (isEditing) {
+                    return (
+                      <tr key={item.id} style={{ background: "rgba(99, 102, 241, 0.02)" }}>
+                        <td>
+                          <select
+                            id={`edit-transfer-to-account-${item.id}`}
+                            name="to_account_code"
+                            value={editForm.to_account_code}
+                            onChange={(event) =>
+                              setEditForm((current) => ({
+                                ...current,
+                                to_account_code: event.target.value as AccountCode
+                              }))
+                            }
+                            style={{ height: "34px", padding: "0 0.5rem" }}
+                          >
+                            {accountsForView.map((account) => (
+                              <option key={account.code} value={account.code}>
+                                Transfer to {account.code} - {account.bank_name}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            id={`edit-transfer-note-${item.id}`}
+                            name="note"
+                            type="text"
+                            value={editForm.note}
+                            onChange={(event) => setEditForm((current) => ({ ...current, note: event.target.value }))}
+                            style={{ height: "34px", padding: "0 0.5rem" }}
+                            autoComplete="off"
+                          />
+                        </td>
+                        <td className="amount">
+                          <input
+                            required
+                            id={`edit-transfer-amount-${item.id}`}
+                            name="amount"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editForm.amount}
+                            onChange={(event) => setEditForm((current) => ({ ...current, amount: event.target.value }))}
+                            style={{ height: "34px", padding: "0 0.5rem", width: "100px", textAlign: "right" }}
+                            autoComplete="transaction-amount"
+                          />
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              className="action"
+                              type="button"
+                              disabled={updating}
+                              onClick={() => void handleUpdate()}
+                            >
+                              {updating ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                              className="action ghost"
+                              type="button"
+                              onClick={() => {
+                                setEditingId("");
+                                setEditForm(defaultTransferForm);
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+
                   return (
                     <tr key={item.id}>
-                      <td>
-                        <select
-                          value={editForm.to_account_code}
-                          onChange={(event) =>
-                            setEditForm((current) => ({
-                              ...current,
-                              to_account_code: event.target.value as AccountCode
-                            }))
-                          }
-                        >
-                          {accountsForView.map((account) => (
-                            <option key={account.code} value={account.code}>
-                              Transfer to {account.code} - {account.bank_name}
-                            </option>
-                          ))}
-                        </select>
+                      <td style={{ fontWeight: "500", color: "#fff" }}>
+                        Transfer to <span style={{ color: "var(--accent)" }}>{item.to_account_code}</span> 
+                        <span style={{ color: "var(--muted)", fontSize: "0.8rem", marginLeft: "0.4rem" }}>
+                          ({accountNameByCode.get(item.to_account_code) ?? "Unknown"})
+                        </span>
                       </td>
-                      <td>
-                        <input
-                          type="text"
-                          value={editForm.note}
-                          onChange={(event) => setEditForm((current) => ({ ...current, note: event.target.value }))}
-                        />
-                      </td>
-                      <td className="amount">
-                        <input
-                          required
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={editForm.amount}
-                          onChange={(event) => setEditForm((current) => ({ ...current, amount: event.target.value }))}
-                        />
-                      </td>
+                      <td style={{ color: "var(--muted)" }}>{item.note || "-"}</td>
+                      <td className="amount" style={{ color: "var(--accent)", fontWeight: "700" }}>{currency.format(Number(item.amount))}</td>
                       <td>
                         <div className="table-actions">
-                          <button
-                            className="action"
-                            type="button"
-                            disabled={updating}
-                            onClick={() => void handleUpdate()}
-                          >
-                            {updating ? "Saving..." : "Save"}
+                          <button className="action ghost" type="button" onClick={() => startEdit(item)}>
+                            Edit
                           </button>
                           <button
-                            className="action ghost"
+                            className="action danger"
                             type="button"
-                            onClick={() => {
-                              setEditingId("");
-                              setEditForm(defaultTransferForm);
-                            }}
+                            disabled={deletingId === item.id}
+                            onClick={() => void handleDelete(item.id)}
                           >
-                            Cancel
+                            {deletingId === item.id ? "Removing..." : "Remove"}
                           </button>
                         </div>
                       </td>
                     </tr>
                   );
-                }
-
-                return (
-                  <tr key={item.id}>
-                    <td>
-                      Transfer to {item.to_account_code} - {accountNameByCode.get(item.to_account_code) ?? "Unknown"}
-                    </td>
-                    <td>{item.note || "-"}</td>
-                    <td className="amount">{currency.format(Number(item.amount))}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button className="action ghost" type="button" onClick={() => startEdit(item)}>
-                          Edit
-                        </button>
-                        <button
-                          className="action danger"
-                          type="button"
-                          disabled={deletingId === item.id}
-                          onClick={() => void handleDelete(item.id)}
-                        >
-                          {deletingId === item.id ? "Removing..." : "Remove"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        <div className="outgoing-total">
-          <p className="outgoing-total-label">Total Transfers</p>
-          <p className="outgoing-total-value">{currency.format(totalTransfers)}</p>
+        <div className="outgoing-total" style={{ borderTop: "1px solid var(--panel-border)", marginTop: "1.25rem", paddingTop: "1rem" }}>
+          <p className="outgoing-total-label" style={{ fontSize: "0.85rem" }}>Total Transfers Routed</p>
+          <p className="outgoing-total-value" style={{ fontSize: "1.5rem", color: "var(--accent)" }}>{currency.format(totalTransfers)}</p>
         </div>
       </section>
     </main>
