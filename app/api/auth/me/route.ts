@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/supabase-server";
+import { requireAuthenticatedUser } from "@/lib/db-server";
+import { query } from "@/lib/db";
 
 export async function GET(req: Request) {
   const auth = await requireAuthenticatedUser(req);
@@ -22,22 +23,23 @@ export async function PUT(req: Request) {
     return auth.response;
   }
 
-  const { client, user } = auth;
+  const { user } = auth;
   const body = await req.json();
   const displayName = body.display_name === null ? null : String(body.display_name ?? "").trim() || null;
 
-  const { data, error } = await client
-    .from("app_users")
-    .update({
-      display_name: displayName
-    })
-    .eq("id", user.id)
-    .select("email, display_name")
-    .single();
+  try {
+    const res = await query(
+      "UPDATE app_users SET display_name = $1 WHERE id = $2 RETURNING email, display_name",
+      [displayName, user.id]
+    );
+    const data = res.rows[0];
 
-  if (error) {
+    if (!data) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ data });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-
-  return NextResponse.json({ data });
 }

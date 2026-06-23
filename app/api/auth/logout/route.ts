@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { clearSessionCookie, createServerSupabaseClient, hashSessionToken } from "@/lib/supabase-server";
+import { clearSessionCookie, hashSessionToken } from "@/lib/db-server";
+import { query } from "@/lib/db";
 
 function readSessionCookie(req: Request): string | null {
   const cookieHeader = req.headers.get("cookie") ?? "";
@@ -18,8 +19,11 @@ function readSessionCookie(req: Request): string | null {
 export async function POST(req: Request) {
   const token = readSessionCookie(req);
   if (token) {
-    const client = createServerSupabaseClient();
-    await client.from("app_sessions").delete().eq("token_hash", hashSessionToken(token));
+    try {
+      await query("DELETE FROM app_sessions WHERE token_hash = $1", [hashSessionToken(token)]);
+    } catch (error) {
+      // Ignore or log error
+    }
   }
 
   const response = NextResponse.json({ ok: true });

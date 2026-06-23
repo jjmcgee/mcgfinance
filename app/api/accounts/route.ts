@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/supabase-server";
+import { requireAuthenticatedUser } from "@/lib/db-server";
+import { query } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,38 +11,42 @@ export async function GET(req: Request) {
     return auth.response;
   }
 
-  const { client, user } = auth;
-  const { data, error } = await client
-    .from("accounts")
-    .select("code, bank_name")
-    .eq("user_id", user.id)
-    .order("code", { ascending: true });
+  const { user } = auth;
 
-  if (error) {
+  try {
+    const res = await query(
+      "SELECT code, bank_name FROM accounts WHERE user_id = $1 ORDER BY code ASC",
+      [user.id]
+    );
+    const data = res.rows;
+
+    if (data.length > 0) {
+      return NextResponse.json({ data });
+    }
+
+    const starterAccounts = [
+      [user.id, "N", "Account N"],
+      [user.id, "B", "Account B"],
+      [user.id, "C", "Account C"]
+    ];
+
+    const created: any[] = [];
+    for (const account of starterAccounts) {
+      const insertRes = await query(
+        "INSERT INTO accounts (user_id, code, bank_name) VALUES ($1, $2, $3) RETURNING code, bank_name",
+        account
+      );
+      if (insertRes.rows[0]) {
+        created.push(insertRes.rows[0]);
+      }
+    }
+    // Sort created by code ascending
+    created.sort((a, b) => a.code.localeCompare(b.code));
+
+    return NextResponse.json({ data: created });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  if (data.length > 0) {
-    return NextResponse.json({ data });
-  }
-
-  const starterAccounts = [
-    { user_id: user.id, code: "N", bank_name: "Account N" },
-    { user_id: user.id, code: "B", bank_name: "Account B" },
-    { user_id: user.id, code: "C", bank_name: "Account C" }
-  ];
-
-  const { data: created, error: createError } = await client
-    .from("accounts")
-    .insert(starterAccounts)
-    .select("code, bank_name")
-    .order("code", { ascending: true });
-
-  if (createError) {
-    return NextResponse.json({ error: createError.message }, { status: 400 });
-  }
-
-  return NextResponse.json({ data: created });
 }
 
 export async function POST(req: Request) {
@@ -50,22 +55,19 @@ export async function POST(req: Request) {
     return auth.response;
   }
 
-  const { client, user } = auth;
+  const { user } = auth;
   const body = await req.json();
+  const code = String(body.code ?? "").trim().toUpperCase();
+  const bankName = String(body.bank_name ?? "").trim();
 
-  const { data, error } = await client
-    .from("accounts")
-    .insert({
-      user_id: user.id,
-      code: String(body.code ?? "").trim().toUpperCase(),
-      bank_name: String(body.bank_name ?? "").trim()
-    })
-    .select("code, bank_name")
-    .single();
-
-  if (error) {
+  try {
+    const res = await query(
+      "INSERT INTO accounts (user_id, code, bank_name) VALUES ($1, $2, $3) RETURNING code, bank_name",
+      [user.id, code, bankName]
+    );
+    const data = res.rows[0];
+    return NextResponse.json({ data }, { status: 201 });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-
-  return NextResponse.json({ data }, { status: 201 });
 }

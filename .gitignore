@@ -2,3 +2,7 @@ node_modules
 .next
 .env.local
 .DS_Store
+pgdata/
+db_export.sql
+.env.prod.temp
+*.temp

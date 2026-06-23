@@ -1,4 +1,18 @@
 services:
+  db:
+    image: postgres:17-alpine
+    container_name: mcgfinance-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: mcgfinance
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
   app-dev:
     build:
       context: .
@@ -6,13 +20,17 @@ services:
     container_name: mcgfinance-dev
     env_file:
       - .env.local
+    environment:
+      - DATABASE_URL=postgresql://postgres:password123@db:5432/mcgfinance
     ports:
       - "3000:3000"
     volumes:
       - ./:/app
       - /app/node_modules
       - /app/.next
-    profiles: ["dev"]
+    depends_on:
+      - db
+    profiles: [ "dev" ]
 
   app-prod:
     build:
@@ -21,7 +39,14 @@ services:
     container_name: mcgfinance-prod
     env_file:
       - .env.local
+    environment:
+      - DATABASE_URL=postgresql://postgres:password123@db:5432/mcgfinance
     ports:
       - "127.0.0.1:3000:3000"
     restart: unless-stopped
-    profiles: ["prod"]
+    depends_on:
+      - db
+    profiles: [ "prod" ]
+
+volumes:
+  pgdata:

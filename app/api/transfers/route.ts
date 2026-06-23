@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/supabase-server";
+import { requireAuthenticatedUser } from "@/lib/db-server";
+import { query } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,7 +11,7 @@ export async function GET(req: Request) {
     return auth.response;
   }
 
-  const { client, user } = auth;
+  const { user } = auth;
   const { searchParams } = new URL(req.url);
   const monthId = searchParams.get("month_id");
 
@@ -18,18 +19,16 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "month_id query param is required" }, { status: 400 });
   }
 
-  const { data, error } = await client
-    .from("transfer_items")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("month_id", monthId)
-    .order("created_at", { ascending: true });
-
-  if (error) {
+  try {
+    const res = await query(
+      "SELECT * FROM transfer_items WHERE user_id = $1 AND month_id = $2 ORDER BY created_at ASC",
+      [user.id, monthId]
+    );
+    const data = res.rows;
+    return NextResponse.json({ data });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  return NextResponse.json({ data });
 }
 
 export async function POST(req: Request) {
@@ -38,39 +37,29 @@ export async function POST(req: Request) {
     return auth.response;
   }
 
-  const { client, user } = auth;
+  const { user } = auth;
   const body = await req.json();
 
-  const { data: month, error: monthError } = await client
-    .from("month_summaries")
-    .select("id")
-    .eq("id", body.month_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  try {
+    const monthRes = await query(
+      "SELECT id FROM month_summaries WHERE id = $1 AND user_id = $2 LIMIT 1",
+      [body.month_id, user.id]
+    );
+    const month = monthRes.rows[0];
 
-  if (monthError) {
-    return NextResponse.json({ error: monthError.message }, { status: 400 });
-  }
+    if (!month) {
+      return NextResponse.json({ error: "Month not found" }, { status: 404 });
+    }
 
-  if (!month) {
-    return NextResponse.json({ error: "Month not found" }, { status: 404 });
-  }
-
-  const { data, error } = await client
-    .from("transfer_items")
-    .insert({
-      user_id: user.id,
-      month_id: body.month_id,
-      to_account_code: body.to_account_code,
-      amount: body.amount,
-      note: body.note ?? null
-    })
-    .select("*")
-    .single();
-
-  if (error) {
+    const res = await query(
+      `INSERT INTO transfer_items (user_id, month_id, to_account_code, amount, note)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [user.id, body.month_id, body.to_account_code, body.amount, body.note ?? null]
+    );
+    const data = res.rows[0];
+    return NextResponse.json({ data }, { status: 201 });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-
-  return NextResponse.json({ data }, { status: 201 });
 }

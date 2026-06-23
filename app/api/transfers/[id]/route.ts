@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/supabase-server";
+import { requireAuthenticatedUser } from "@/lib/db-server";
+import { query } from "@/lib/db";
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const auth = await requireAuthenticatedUser(req);
@@ -7,26 +8,27 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return auth.response;
   }
 
-  const { client, user } = auth;
+  const { user } = auth;
   const body = await req.json();
 
-  const { data, error } = await client
-    .from("transfer_items")
-    .update({
-      to_account_code: body.to_account_code,
-      amount: body.amount,
-      note: body.note ?? null
-    })
-    .eq("id", params.id)
-    .eq("user_id", user.id)
-    .select("*")
-    .single();
+  try {
+    const res = await query(
+      `UPDATE transfer_items
+       SET to_account_code = $1, amount = $2, note = $3
+       WHERE id = $4 AND user_id = $5
+       RETURNING *`,
+      [body.to_account_code, body.amount, body.note ?? null, params.id, user.id]
+    );
+    const data = res.rows[0];
 
-  if (error) {
+    if (!data) {
+      return NextResponse.json({ error: "Transfer not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ data });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-
-  return NextResponse.json({ data });
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
@@ -35,22 +37,21 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return auth.response;
   }
 
-  const { client, user } = auth;
-  const { data, error } = await client
-    .from("transfer_items")
-    .delete()
-    .eq("id", params.id)
-    .eq("user_id", user.id)
-    .select("id")
-    .maybeSingle();
+  const { user } = auth;
 
-  if (error) {
+  try {
+    const res = await query(
+      "DELETE FROM transfer_items WHERE id = $1 AND user_id = $2 RETURNING id",
+      [params.id, user.id]
+    );
+    const data = res.rows[0];
+
+    if (!data) {
+      return NextResponse.json({ error: "Transfer not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ data });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-
-  if (!data) {
-    return NextResponse.json({ error: "Transfer not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ data });
 }

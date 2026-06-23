@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import {
-  createServerSupabaseClient,
   createUserSession,
   hashPassword,
   setSessionCookie
-} from "@/lib/supabase-server";
+} from "@/lib/db-server";
+import { query } from "@/lib/db";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -20,26 +20,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
   }
 
-  const client = createServerSupabaseClient();
   const passwordHash = hashPassword(password);
 
-  const { data, error } = await client
-    .from("app_users")
-    .insert({
-      email,
-      password_hash: passwordHash,
-      display_name: displayName
-    })
-    .select("id,email,display_name")
-    .single();
+  try {
+    const res = await query(
+      "INSERT INTO app_users (email, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, email, display_name",
+      [email, passwordHash, displayName]
+    );
+    const data = res.rows[0];
 
-  if (error) {
+    const sessionToken = await createUserSession(data.id);
+    const response = NextResponse.json({ data }, { status: 201 });
+    setSessionCookie(response, req, sessionToken);
+    return response;
+  } catch (error: any) {
     const message = error.code === "23505" ? "Email is already registered" : error.message;
     return NextResponse.json({ error: message }, { status: 400 });
   }
-
-  const sessionToken = await createUserSession(client, data.id);
-  const response = NextResponse.json({ data }, { status: 201 });
-  setSessionCookie(response, req, sessionToken);
-  return response;
 }
