@@ -1,19 +1,6 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-
-function getSupabaseEnv(): { supabaseUrl: string; supabaseServiceRoleKey: string } {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error(
-      "Missing env vars. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local"
-    );
-  }
-
-  return { supabaseUrl, supabaseServiceRoleKey };
-}
+import { query } from "./db";
 
 const sessionCookieName = "app_session";
 const sessionMaxAgeSeconds = 60 * 60 * 24 * 30;
@@ -23,16 +10,6 @@ export type AppUser = {
   email: string;
   display_name: string | null;
 };
-
-export function createServerSupabaseClient(): SupabaseClient {
-  const { supabaseUrl, supabaseServiceRoleKey } = getSupabaseEnv();
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
-    }
-  });
-}
 
 function readCookie(req: Request, name: string): string | null {
   const cookieHeader = req.headers.get("cookie") ?? "";
@@ -114,27 +91,21 @@ export function clearSessionCookie(response: NextResponse, req: Request) {
   });
 }
 
-export async function createUserSession(client: SupabaseClient, userId: string) {
+export async function createUserSession(userId: string) {
   const token = generateSessionToken();
   const tokenHash = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + sessionMaxAgeSeconds * 1000).toISOString();
 
-  const { error } = await client.from("app_sessions").insert({
-    user_id: userId,
-    token_hash: tokenHash,
-    expires_at: expiresAt
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  await query(
+    "INSERT INTO app_sessions (user_id, token_hash, expires_at) VALUES ($1, $2, $3)",
+    [userId, tokenHash, expiresAt]
+  );
 
   return token;
 }
 
 export async function requireAuthenticatedUser(req: Request): Promise<
   | {
-      client: SupabaseClient;
       user: AppUser;
       sessionTokenHash: string;
     }
@@ -150,38 +121,37 @@ export async function requireAuthenticatedUser(req: Request): Promise<
     };
   }
 
-  const client = createServerSupabaseClient();
   const tokenHash = hashSessionToken(token);
-  const { data: session, error: sessionError } = await client
-    .from("app_sessions")
-    .select("user_id, expires_at")
-    .eq("token_hash", tokenHash)
-    .maybeSingle();
+  const sessionRes = await query(
+    "SELECT user_id, expires_at FROM app_sessions WHERE token_hash = $1 LIMIT 1",
+    [tokenHash]
+  );
+  const session = sessionRes.rows[0];
 
-  if (sessionError || !session) {
+  if (!session) {
     return {
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     };
   }
 
   if (new Date(session.expires_at).getTime() <= Date.now()) {
-    await client.from("app_sessions").delete().eq("token_hash", tokenHash);
+    await query("DELETE FROM app_sessions WHERE token_hash = $1", [tokenHash]);
     return {
       response: NextResponse.json({ error: "Session expired" }, { status: 401 })
     };
   }
 
-  const { data: user, error: userError } = await client
-    .from("app_users")
-    .select("id,email,display_name")
-    .eq("id", session.user_id)
-    .maybeSingle();
+  const userRes = await query(
+    "SELECT id, email, display_name FROM app_users WHERE id = $1 LIMIT 1",
+    [session.user_id]
+  );
+  const user = userRes.rows[0];
 
-  if (userError || !user) {
+  if (!user) {
     return {
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     };
   }
 
-  return { client, user: user as AppUser, sessionTokenHash: tokenHash };
+  return { user: user as AppUser, sessionTokenHash: tokenHash };
 }

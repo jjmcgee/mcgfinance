@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/supabase-server";
+import { requireAuthenticatedUser } from "@/lib/db-server";
+import { query } from "@/lib/db";
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const auth = await requireAuthenticatedUser(req);
@@ -7,28 +8,35 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return auth.response;
   }
 
-  const { client, user } = auth;
+  const { user } = auth;
   const body = await req.json();
 
-  const { data, error } = await client
-    .from("expense_items")
-    .update({
-      name: body.name,
-      due_day: body.due_day,
-      account_code: body.account_code,
-      amount: body.amount,
-      is_recurring: body.is_recurring
-    })
-    .eq("id", params.id)
-    .eq("user_id", user.id)
-    .select("*")
-    .single();
+  try {
+    const res = await query(
+      `UPDATE expense_items
+       SET name = $1, due_day = $2, account_code = $3, amount = $4, is_recurring = $5
+       WHERE id = $6 AND user_id = $7
+       RETURNING *`,
+      [
+        body.name,
+        body.due_day,
+        body.account_code,
+        body.amount,
+        body.is_recurring,
+        params.id,
+        user.id
+      ]
+    );
+    const data = res.rows[0];
 
-  if (error) {
+    if (!data) {
+      return NextResponse.json({ error: "Monthly outgoing not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ data });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-
-  return NextResponse.json({ data });
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
@@ -37,22 +45,21 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return auth.response;
   }
 
-  const { client, user } = auth;
-  const { data, error } = await client
-    .from("expense_items")
-    .delete()
-    .eq("id", params.id)
-    .eq("user_id", user.id)
-    .select("id")
-    .maybeSingle();
+  const { user } = auth;
 
-  if (error) {
+  try {
+    const res = await query(
+      "DELETE FROM expense_items WHERE id = $1 AND user_id = $2 RETURNING id",
+      [params.id, user.id]
+    );
+    const data = res.rows[0];
+
+    if (!data) {
+      return NextResponse.json({ error: "Monthly outgoing not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ data });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-
-  if (!data) {
-    return NextResponse.json({ error: "Monthly outgoing not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ data });
 }

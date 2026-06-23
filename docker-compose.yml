@@ -1,18 +1,36 @@
 services:
+  db:
+    image: postgres:17-alpine
+    container_name: mcgfinance-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-mcgfinance}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
   app-dev:
     build:
       context: .
       dockerfile: Dockerfile.dev
     container_name: mcgfinance-dev
     env_file:
-      - .env.local
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-mcgfinance}
     ports:
       - "3000:3000"
     volumes:
       - ./:/app
       - /app/node_modules
       - /app/.next
-    profiles: ["dev"]
+    depends_on:
+      - db
+    profiles: [ "dev" ]
 
   app-prod:
     build:
@@ -20,8 +38,15 @@ services:
       dockerfile: Dockerfile
     container_name: mcgfinance-prod
     env_file:
-      - .env.local
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-mcgfinance}
     ports:
       - "127.0.0.1:3000:3000"
     restart: unless-stopped
-    profiles: ["prod"]
+    depends_on:
+      - db
+    profiles: [ "prod" ]
+
+volumes:
+  pgdata:

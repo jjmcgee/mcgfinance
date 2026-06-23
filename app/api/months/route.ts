@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/supabase-server";
+import { requireAuthenticatedUser } from "@/lib/db-server";
+import { query } from "@/lib/db";
 
 export async function GET(req: Request) {
   const auth = await requireAuthenticatedUser(req);
@@ -7,18 +8,18 @@ export async function GET(req: Request) {
     return auth.response;
   }
 
-  const { client, user } = auth;
-  const { data, error } = await client
-    .from("month_summaries")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  const { user } = auth;
 
-  if (error) {
+  try {
+    const res = await query(
+      "SELECT * FROM month_summaries WHERE user_id = $1 ORDER BY created_at DESC",
+      [user.id]
+    );
+    const data = res.rows;
+    return NextResponse.json({ data });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  return NextResponse.json({ data });
 }
 
 export async function POST(req: Request) {
@@ -27,65 +28,60 @@ export async function POST(req: Request) {
     return auth.response;
   }
 
-  const { client, user } = auth;
+  const { user } = auth;
   const body = await req.json();
 
-  const { data: createdMonth, error: monthError } = await client
-    .from("month_summaries")
-    .insert({
-      user_id: user.id,
-      month_label: body.month_label,
-      wage: body.wage,
-      float_amount: body.float_amount
-    })
-    .select("*")
-    .single();
-
-  if (monthError) {
-    return NextResponse.json({ error: monthError.message }, { status: 400 });
+  let createdMonth;
+  try {
+    const res = await query(
+      `INSERT INTO month_summaries (user_id, month_label, wage, float_amount)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [user.id, body.month_label, body.wage, body.float_amount]
+    );
+    createdMonth = res.rows[0];
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  const { data: previousMonth, error: previousMonthError } = await client
-    .from("month_summaries")
-    .select("id")
-    .eq("user_id", user.id)
-    .neq("id", createdMonth.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  try {
+    const previousMonthRes = await query(
+      `SELECT id FROM month_summaries
+       WHERE user_id = $1 AND id <> $2
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [user.id, createdMonth.id]
+    );
+    const previousMonth = previousMonthRes.rows[0];
 
-  if (previousMonthError) {
-    return NextResponse.json({ error: previousMonthError.message }, { status: 500 });
-  }
+    if (previousMonth?.id) {
+      const outgoingsRes = await query(
+        "SELECT name, due_day, account_code, amount, is_recurring FROM expense_items WHERE month_id = $1",
+        [previousMonth.id]
+      );
+      const previousOutgoings = outgoingsRes.rows;
 
-  if (previousMonth?.id) {
-    const { data: previousOutgoings, error: previousOutgoingsError } = await client
-      .from("expense_items")
-      .select("name,due_day,account_code,amount,is_recurring")
-      .eq("month_id", previousMonth.id);
-
-    if (previousOutgoingsError) {
-      return NextResponse.json({ error: previousOutgoingsError.message }, { status: 500 });
-    }
-
-    if (previousOutgoings.length > 0) {
-      const rowsToInsert = previousOutgoings.map((item) => ({
-        user_id: user.id,
-        month_id: createdMonth.id,
-        name: item.name,
-        due_day: item.due_day,
-        account_code: item.account_code,
-        amount: item.amount,
-        is_recurring: item.is_recurring
-      }));
-
-      const { error: copyError } = await client.from("expense_items").insert(rowsToInsert);
-
-      if (copyError) {
-        return NextResponse.json({ error: copyError.message }, { status: 500 });
+      if (previousOutgoings.length > 0) {
+        for (const item of previousOutgoings) {
+          await query(
+            `INSERT INTO expense_items (user_id, month_id, name, due_day, account_code, amount, is_recurring)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+              user.id,
+              createdMonth.id,
+              item.name,
+              item.due_day,
+              item.account_code,
+              item.amount,
+              item.is_recurring
+            ]
+          );
+        }
       }
     }
-  }
 
-  return NextResponse.json({ data: createdMonth }, { status: 201 });
+    return NextResponse.json({ data: createdMonth }, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
