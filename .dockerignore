@@ -3,3 +3,7 @@ node_modules
 .git
 .env.local
 npm-debug.log*
+pgdata/
+db_export.sql
+.env.prod.temp
+*.temp
