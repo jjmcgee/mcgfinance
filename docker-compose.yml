@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: mcgfinance
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - ./pgdata:/var/lib/postgresql/data
       - ./supabase/schema.sql:/docker-entrypoint-initdb.d/schema.sql
