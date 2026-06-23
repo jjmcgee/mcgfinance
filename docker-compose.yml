@@ -4,9 +4,9 @@ services:
     container_name: mcgfinance-db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: mcgfinance
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-mcgfinance}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -19,9 +19,9 @@ services:
       dockerfile: Dockerfile.dev
     container_name: mcgfinance-dev
     env_file:
-      - .env.local
+      - .env
     environment:
-      - DATABASE_URL=postgresql://postgres:password123@db:5432/mcgfinance
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-mcgfinance}
     ports:
       - "3000:3000"
     volumes:
@@ -38,9 +38,9 @@ services:
       dockerfile: Dockerfile
     container_name: mcgfinance-prod
     env_file:
-      - .env.local
+      - .env
     environment:
-      - DATABASE_URL=postgresql://postgres:password123@db:5432/mcgfinance
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-mcgfinance}
     ports:
       - "127.0.0.1:3000:3000"
     restart: unless-stopped
