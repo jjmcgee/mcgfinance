@@ -310,7 +310,7 @@ html, body {
 .user-name {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-heading);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -327,11 +327,11 @@ html, body {
 /* Mobile Header and Bottom Bar */
 .mobile-header {
   display: none;
-  height: var(--header-height);
+  height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 1.25rem 0 1.25rem;
   background: var(--mobile-header-bg);
   backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--panel-border);
-  padding: 0 1.25rem;
   align-items: center;
   justify-content: space-between;
   position: fixed;
@@ -768,7 +768,7 @@ td {
   text-align: right;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: #fff;
+  color: var(--text-heading);
 }
 
 .badge {
@@ -852,7 +852,7 @@ td {
 .gauge-percent {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-heading);
 }
 
 .gauge-label {
@@ -1077,7 +1077,7 @@ html[data-theme="light"] .bank-card .action.ghost:hover {
 .month-title {
   font-weight: 600;
   font-size: 1.05rem;
-  color: #fff;
+  color: var(--text-heading);
   margin-bottom: 0.15rem;
 }
 
@@ -1153,7 +1153,7 @@ html[data-theme="light"] .bank-card .action.ghost:hover {
 
   .main-wrapper {
     margin-left: 0;
-    padding-top: var(--header-height);
+    padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
   }
 
   main {
