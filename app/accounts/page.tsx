@@ -2,42 +2,23 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { Account, AccountCode } from "@/lib/types";
+import { useDataContext } from "@/app/data-context";
 
 export default function AccountsPage() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const {
+    accounts,
+    setAccounts,
+    loadingAccounts: loading
+  } = useDataContext();
+
   const [editingCode, setEditingCode] = useState<AccountCode | "">("");
   const [bankName, setBankName] = useState("");
   const [newCode, setNewCode] = useState("");
   const [newBankName, setNewBankName] = useState("");
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [deletingCode, setDeletingCode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-
-  useEffect(() => {
-    void loadAccounts();
-  }, []);
-
-  async function loadAccounts() {
-    setLoading(true);
-    setErrorMessage("");
-
-    try {
-      const response = await fetch("/api/accounts");
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to load accounts");
-      }
-
-      setAccounts((payload.data ?? []) as Account[]);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to load accounts");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function startEdit(account: Account) {
     setEditingCode(account.code);

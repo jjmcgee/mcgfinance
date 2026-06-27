@@ -1075,10 +1075,11 @@ html[data-theme="light"] .bank-card .action.ghost:hover {
 }
 
 .month-title {
+  display: block;
   font-weight: 600;
   font-size: 1.05rem;
   color: var(--text-heading);
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.3rem;
 }
 
 .month-meta {

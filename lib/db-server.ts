@@ -122,36 +122,33 @@ export async function requireAuthenticatedUser(req: Request): Promise<
   }
 
   const tokenHash = hashSessionToken(token);
-  const sessionRes = await query(
-    "SELECT user_id, expires_at FROM app_sessions WHERE token_hash = $1 LIMIT 1",
+  const userSessionRes = await query(
+    `SELECT u.id, u.email, u.display_name, s.expires_at 
+     FROM app_sessions s 
+     JOIN app_users u ON s.user_id = u.id 
+     WHERE s.token_hash = $1 LIMIT 1`,
     [tokenHash]
   );
-  const session = sessionRes.rows[0];
+  const userSession = userSessionRes.rows[0];
 
-  if (!session) {
+  if (!userSession) {
     return {
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     };
   }
 
-  if (new Date(session.expires_at).getTime() <= Date.now()) {
+  if (new Date(userSession.expires_at).getTime() <= Date.now()) {
     await query("DELETE FROM app_sessions WHERE token_hash = $1", [tokenHash]);
     return {
       response: NextResponse.json({ error: "Session expired" }, { status: 401 })
     };
   }
 
-  const userRes = await query(
-    "SELECT id, email, display_name FROM app_users WHERE id = $1 LIMIT 1",
-    [session.user_id]
-  );
-  const user = userRes.rows[0];
+  const user: AppUser = {
+    id: userSession.id,
+    email: userSession.email,
+    display_name: userSession.display_name
+  };
 
-  if (!user) {
-    return {
-      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    };
-  }
-
-  return { user: user as AppUser, sessionTokenHash: tokenHash };
+  return { user, sessionTokenHash: tokenHash };
 }

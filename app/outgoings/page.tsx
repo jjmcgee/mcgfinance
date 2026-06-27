@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Account, AccountCode, ExpenseItem, MonthSummary } from "@/lib/types";
+import { useDataContext } from "@/app/data-context";
 
 type OutgoingFormState = {
   name: string;
@@ -31,14 +32,18 @@ const currency = new Intl.NumberFormat("en-GB", {
 });
 
 export default function OutgoingsPage() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [months, setMonths] = useState<MonthSummary[]>([]);
-  const [selectedMonthId, setSelectedMonthId] = useState<string>("");
+  const {
+    accounts,
+    months,
+    selectedMonthId,
+    setSelectedMonthId,
+    loadingMonths
+  } = useDataContext();
+
   const [items, setItems] = useState<ExpenseItem[]>([]);
   const [form, setForm] = useState<OutgoingFormState>(defaultOutgoingForm);
   const [editingId, setEditingId] = useState<string>("");
   const [editForm, setEditForm] = useState<OutgoingFormState>(defaultOutgoingForm);
-  const [loadingMonths, setLoadingMonths] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -46,9 +51,15 @@ export default function OutgoingsPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    void loadMonths();
-    void loadAccounts();
-  }, []);
+    if (accounts.length > 0) {
+      setForm((current) => {
+        if (accounts.some((account) => account.code === current.account_code)) {
+          return current;
+        }
+        return { ...current, account_code: accounts[0].code };
+      });
+    }
+  }, [accounts]);
 
   useEffect(() => {
     if (!selectedMonthId) {
@@ -71,57 +82,7 @@ export default function OutgoingsPage() {
     [accountsForView]
   );
 
-  async function loadMonths() {
-    setLoadingMonths(true);
-    setErrorMessage("");
-
-    try {
-      const response = await fetch("/api/months");
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to load months");
-      }
-
-      const fetchedMonths = (payload.data ?? []) as MonthSummary[];
-      setMonths(fetchedMonths);
-
-      if (fetchedMonths.length > 0) {
-        setSelectedMonthId((current) => current || fetchedMonths[0].id);
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to load months");
-    } finally {
-      setLoadingMonths(false);
-    }
-  }
-
-  async function loadAccounts() {
-    setErrorMessage("");
-
-    try {
-      const response = await fetch("/api/accounts");
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to load accounts");
-      }
-
-      const fetched = (payload.data ?? []) as Account[];
-      setAccounts(fetched);
-      if (fetched.length > 0) {
-        setForm((current) => {
-          if (fetched.some((account) => account.code === current.account_code)) {
-            return current;
-          }
-
-          return { ...current, account_code: fetched[0].code };
-        });
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to load accounts");
-    }
-  }
+  // Month and Account loading is managed by DataContext
 
   async function loadOutgoings(monthId: string) {
     setLoadingItems(true);
@@ -520,7 +481,7 @@ export default function OutgoingsPage() {
 
                   return (
                     <tr key={item.id}>
-                      <td style={{ fontWeight: "500", color: "#fff" }}>{item.name}</td>
+                      <td style={{ fontWeight: "500", color: "var(--text-heading)" }}>{item.name}</td>
                       <td>
                         <span className="badge neutral">Day {item.due_day}</span>
                       </td>

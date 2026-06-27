@@ -318,7 +318,7 @@ export default function ProfilePage() {
             </p>
           ) : (
             <div style={{ marginTop: "0.5rem" }}>
-              <p className="label" style={{ color: "#fff", marginBottom: "1rem" }}>
+              <p className="label" style={{ color: "var(--text)", marginBottom: "1rem" }}>
                 Add this application to your home screen or desktop launcher for quick access, offline mode support, and an app icon in your taskbar.
               </p>
               
@@ -414,7 +414,7 @@ export default function ProfilePage() {
                       <div>
                         <span className="month-title">{month.month_label}</span>
                         <span className="month-meta">
-                          Wage: <strong style={{ color: "#fff" }}>{currency.format(Number(month.wage))}</strong> | Float: <strong style={{ color: "#fff" }}>{currency.format(Number(month.float_amount))}</strong>
+                          Wage: <strong style={{ color: "var(--text-heading)" }}>{currency.format(Number(month.wage))}</strong> | Float: <strong style={{ color: "var(--text-heading)" }}>{currency.format(Number(month.float_amount))}</strong>
                         </span>
                       </div>
 
