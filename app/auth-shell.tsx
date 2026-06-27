@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { DataProvider } from "@/app/data-context";
 
 type AuthShellProps = {
   children: ReactNode;
@@ -253,94 +254,96 @@ export function AuthShell({ children }: AuthShellProps) {
   ];
 
   return (
-    <div className="app-layout">
-      {/* Desktop Sidebar Navigation */}
-      <aside className="desktop-sidebar">
-        <div className="brand-section">
-          <div className="brand-logo">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#fff" style={{ width: "20px", height: "20px" }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+    <DataProvider>
+      <div className="app-layout">
+        {/* Desktop Sidebar Navigation */}
+        <aside className="desktop-sidebar">
+          <div className="brand-section">
+            <div className="brand-logo">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#fff" style={{ width: "20px", height: "20px" }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span className="brand-name">MCG Finance</span>
           </div>
-          <span className="brand-name">MCG Finance</span>
+
+          <nav className="nav-menu">
+            {menuItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`nav-item ${pathname === item.href ? "active" : ""}`}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </Link>
+            ))}
+          </nav>
+
+          <div className="sidebar-user">
+            <div className="user-profile-summary">
+              <div className="user-avatar">{userMonogram}</div>
+              <div className="user-details">
+                <span className="user-name">{userDisplayName}</span>
+                <span className="user-email">{profile.email}</span>
+              </div>
+            </div>
+            <button className="action ghost" style={{ height: "36px", fontSize: "0.85rem" }} type="button" onClick={() => void handleSignOut()}>
+              Sign Out
+            </button>
+          </div>
+        </aside>
+
+        {/* Mobile Header (Fixed Top) */}
+        <header className="mobile-header">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div className="brand-logo" style={{ width: "28px", height: "28px", fontSize: "1rem" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#fff" style={{ width: "16px", height: "16px" }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span className="brand-name" style={{ fontSize: "1.1rem" }}>MCG Finance</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
+            <div className="user-avatar" style={{ width: "28px", height: "28px", fontSize: "0.75rem" }}>{userMonogram}</div>
+            <button 
+              onClick={() => void handleSignOut()} 
+              style={{ background: "none", border: "none", color: "var(--danger)", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer", padding: "0.2rem" }}
+            >
+              Exit
+            </button>
+          </div>
+        </header>
+
+        {/* Main Page Layout Wrapper */}
+        <div className="main-wrapper">
+          {statusMessage && (
+            <div style={{ padding: "1rem 2rem 0" }}>
+              <p className="badge success">{statusMessage}</p>
+            </div>
+          )}
+          {errorMessage && (
+            <div style={{ padding: "1rem 2rem 0" }}>
+              <p className="error">{errorMessage}</p>
+            </div>
+          )}
+          {children}
         </div>
 
-        <nav className="nav-menu">
+        {/* Mobile Bottom Navigation Bar */}
+        <nav className="mobile-nav-bar">
           {menuItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`nav-item ${pathname === item.href ? "active" : ""}`}
+              className={`mobile-nav-item ${pathname === item.href ? "active" : ""}`}
             >
               {item.icon}
               <span>{item.name}</span>
             </Link>
           ))}
         </nav>
-
-        <div className="sidebar-user">
-          <div className="user-profile-summary">
-            <div className="user-avatar">{userMonogram}</div>
-            <div className="user-details">
-              <span className="user-name">{userDisplayName}</span>
-              <span className="user-email">{profile.email}</span>
-            </div>
-          </div>
-          <button className="action ghost" style={{ height: "36px", fontSize: "0.85rem" }} type="button" onClick={() => void handleSignOut()}>
-            Sign Out
-          </button>
-        </div>
-      </aside>
-
-      {/* Mobile Header (Fixed Top) */}
-      <header className="mobile-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <div className="brand-logo" style={{ width: "28px", height: "28px", fontSize: "1rem" }}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#fff" style={{ width: "16px", height: "16px" }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <span className="brand-name" style={{ fontSize: "1.1rem" }}>MCG Finance</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
-          <div className="user-avatar" style={{ width: "28px", height: "28px", fontSize: "0.75rem" }}>{userMonogram}</div>
-          <button 
-            onClick={() => void handleSignOut()} 
-            style={{ background: "none", border: "none", color: "var(--danger)", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer", padding: "0.2rem" }}
-          >
-            Exit
-          </button>
-        </div>
-      </header>
-
-      {/* Main Page Layout Wrapper */}
-      <div className="main-wrapper">
-        {statusMessage && (
-          <div style={{ padding: "1rem 2rem 0" }}>
-            <p className="badge success">{statusMessage}</p>
-          </div>
-        )}
-        {errorMessage && (
-          <div style={{ padding: "1rem 2rem 0" }}>
-            <p className="error">{errorMessage}</p>
-          </div>
-        )}
-        {children}
       </div>
-
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="mobile-nav-bar">
-        {menuItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`mobile-nav-item ${pathname === item.href ? "active" : ""}`}
-          >
-            {item.icon}
-            <span>{item.name}</span>
-          </Link>
-        ))}
-      </nav>
-    </div>
+    </DataProvider>
   );
 }

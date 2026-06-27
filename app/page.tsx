@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Account, MonthSummary, ExpenseItem } from "@/lib/types";
+import { useDataContext } from "@/app/data-context";
 
 type MonthFormState = {
   month_label: string;
@@ -28,20 +29,20 @@ const fallbackAccounts: Account[] = [
 ];
 
 export default function HomePage() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [months, setMonths] = useState<MonthSummary[]>([]);
+  const {
+    accounts,
+    months,
+    selectedMonthId,
+    setSelectedMonthId,
+    loadingMonths,
+    setMonths
+  } = useDataContext();
+
   const [items, setItems] = useState<ExpenseItem[]>([]);
-  const [selectedMonthId, setSelectedMonthId] = useState<string>("");
   const [monthForm, setMonthForm] = useState<MonthFormState>(defaultMonthForm);
-  const [loadingMonths, setLoadingMonths] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
   const [submittingMonth, setSubmittingMonth] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
-
-  useEffect(() => {
-    void loadMonths();
-    void loadAccounts();
-  }, []);
 
   useEffect(() => {
     if (!selectedMonthId) {
@@ -97,54 +98,7 @@ export default function HomePage() {
     };
   }, [totalTransfers, transferToB, transferToN, transferToC, transferToL]);
 
-  async function loadAccounts() {
-    setErrorMessage("");
-
-    try {
-      const response = await fetch("/api/accounts");
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to load accounts");
-      }
-
-      setAccounts((payload.data ?? []) as Account[]);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to load accounts");
-    }
-  }
-
-  async function loadMonths() {
-    setLoadingMonths(true);
-    setErrorMessage("");
-
-    try {
-      const response = await fetch("/api/months");
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to load months");
-      }
-
-      const fetchedMonths = (payload.data ?? []) as MonthSummary[];
-      setMonths(fetchedMonths);
-      setSelectedMonthId((current) => {
-        if (fetchedMonths.length === 0) {
-          return "";
-        }
-
-        if (current && fetchedMonths.some((month) => month.id === current)) {
-          return current;
-        }
-
-        return fetchedMonths[0].id;
-      });
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to load months");
-    } finally {
-      setLoadingMonths(false);
-    }
-  }
+  // Shared account and month states are managed by DataContext
 
   async function loadExpenses(monthId: string) {
     setLoadingItems(true);
@@ -212,7 +166,7 @@ export default function HomePage() {
       {/* Month Selection Card */}
       <section className="card highlight">
         <label htmlFor="dashboard-month-select" className="stacked">
-          <span style={{ fontSize: "1.05rem", fontWeight: "600", color: "#fff", marginBottom: "0.2rem", display: "block" }}>Selected Budget Month</span>
+          <span style={{ fontSize: "1.05rem", fontWeight: "600", color: "var(--text-heading)", marginBottom: "0.2rem", display: "block" }}>Selected Budget Month</span>
           <select
             id="dashboard-month-select"
             name="selected_month_id"
