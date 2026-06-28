@@ -19,6 +19,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "MCG Finance",
   },
+  other: {
+    "mobile-web-app-capable": "yes"
+  }
 };
 
 export const viewport: Viewport = {
@@ -35,7 +38,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <meta name="mobile-web-app-capable" content="yes" />
         <script dangerouslySetInnerHTML={{ __html: `
           try {
             const theme = localStorage.getItem('theme') || 'system';
