@@ -43,27 +43,47 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Network-First for navigation requests (HTML pages) to prevent stale NextJS chunk errors
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === "basic") {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            return caches.match("/");
+          });
+        })
+    );
+    return;
+  }
+
+  // Cache-First for other static assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== "basic") {
-            return response;
-          }
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+      return fetch(event.request).then((response) => {
+        if (!response || response.status !== 200 || response.type !== "basic") {
           return response;
-        })
-        .catch(() => {
-          if (event.request.mode === "navigate") {
-            return caches.match("/");
-          }
+        }
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
         });
+        return response;
+      });
     })
   );
 });
